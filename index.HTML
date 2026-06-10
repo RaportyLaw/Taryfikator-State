@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kalkulator taryfikatora</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 10px;
+    }
+    .card {
+      background: #1f2937;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 24px;
+      text-align: center;
+      color: #fbbf24;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #9ca3af;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: block;
+      color: #d1d5db;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 14px;
+      outline: none;
+    }
+    select:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 1px #fbbf24;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid #374151;
+    }
+    .result h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #fbbf24;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .row span:first-child {
+      color: #9ca3af;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .badge-green {
+      background: #065f46;
+      color: #bbf7d0;
+    }
+    .badge-red {
+      background: #7f1d1d;
+      color: #fecaca;
+    }
+    .desc {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #d1d5db;
+    }
+    .hint {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Kalkulator taryfikatora</h1>
+    <div class="subtitle">
+      Wybierz paragraf, aby zobaczyć miesiące, grzywnę, rejestr karny i kaucję.
+    </div>
+
+    <label for="offenseSelect">Paragraf / wykroczenie:</label>
+    <select id="offenseSelect">
+      <option value="">— wybierz —</option>
+      <!-- D – ruch drogowy -->
+      <option value="D.1">D.1 Niewłaściwe parkowanie</option>
+      <option value="D.2">D.2 Niezarejestrowany pojazd / brak tablic</option>
+      <option value="D.3">D.3 Pojazd silnikowy (kat. D) bez uprawnień</option>
+      <option value="D.4">D.4 Pojazd bez odpowiednich uprawnień</option>
+      <option value="D.5">D.5 Stała celowa jazda pod prąd</option>
+      <option value="D.6">D.6 Blokowanie ruchu drogowego</option>
+      <option value="D.7">D.7 Spowodowanie kolizji / wypadku</option>
+      <option value="D.8">D.8 Niezatrzymanie pojazdu do kontroli</option>
+      <option value="D.9">D.9 Utrudnianie pracy służbom cywilnym pojazdem</option>
+      <option value="D.10">D.10 Lądowanie transportem powietrznym w ruchu drogowym</option>
+      <option value="D.11">D.11 Utrudnianie pracy służbom państwowym pojazdem</option>
+      <option value="D.12">D.12 Jazda pod wpływem alkoholu / środków</option>
+      <!-- tu możesz dopisać kolejne: BP.1, NS.1, Z.1 itd. -->
+    </select>
+
+    <div id="result" class="result" style="display:none;">
+      <h2 id="resTitle"></h2>
+      <div class="row">
+        <span>Miesiące:</span>
+        <span id="resMonths"></span>
+      </div>
+      <div class="row">
+        <span>Grzywna:</span>
+        <span id="resFine"></span>
+      </div>
+      <div class="row">
+        <span>Rejestr karny:</span>
+        <span id="resRK"></span>
+      </div>
+      <div class="row">
+        <span>Wyjście za kaucją:</span>
+        <span id="resBail"></span>
+      </div>
+      <div class="desc" id="resInfo"></div>
+      <div class="hint">Dane na podstawie Twojego taryfikatora RP.</div>
+    </div>
+  </div>
+
+  <script>
+    const offenses = {
+      "D.1": {
+        name: "D.1 Niewłaściwe parkowanie",
+        months: 0,
+        fine: 10000,
+        rk: "NIE",
+        bail: "NIE",
+        info: "Tylko i wyłącznie złapanie na gorącym uczynku."
+      },
+      "D.2": {
+        name: "D.2 Poruszanie się niezarejestrowanym pojazdem lub bez tablic rejestracyjnych",
+        months: 0,
+        fine: 15000,
+        rk: "NIE",
+        bail: "NIE",
+        info: "Odebranie uprawnień do prowadzenia pojazdów."
+      },
+      "D.3": {
+        name: "D.3 Poruszanie się pojazdem silnikowym (kat. D) bez uprawnień",
+        months: 10,
+        fine: 15000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "Odholowanie pojazdu."
+      },
+      "D.4": {
+        name: "D.4 Poruszanie się pojazdami bez odpowiednich uprawnień",
+        months: 10,
+        fine: 20000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "Odholowanie pojazdu."
+      },
+      "D.5": {
+        name: "D.5 Stała celowa jazda pod prąd",
+        months: 10,
+        fine: 30000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem."
+      },
+      "D.6": {
+        name: "D.6 Blokowanie ruchu drogowego",
+        months: 0,
+        fine: 20000,
+        rk: "NIE",
+        bail: "-",
+        info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem."
+      },
+      "D.7": {
+        name: "D.7 Spowodowanie kolizji / wypadku",
+        months: 10,
+        fine: 25000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem."
+      },
+      "D.8": {
+        name: "D.8 Niezatrzymanie pojazdu do kontroli",
+        months: 10,
+        fine: 25000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem."
+      },
+      "D.9": {
+        name: "D.9 Utrudnianie pracy służbom cywilnym pojazdem mechanicznym",
+        months: 10,
+        fine: 30000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "Odebranie uprawnień do prowadzenia pojazdów + odholowanie pojazdu."
+      },
+      "D.10": {
+        name: "D.10 Lądowanie transportem powietrznym cywilnym w ruchu drogowym",
+        months: 10,
+        fine: 35000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "Lądowanie na czynnym pasie ruchu."
+      },
+      "D.11": {
+        name: "D.11 Utrudnianie pracy służbom państwowym pojazdem mechanicznym",
+        months: 15,
+        fine: 40000,
+        rk: "NIE",
+        bail: "TAK",
+        info: "Odebranie uprawnień do prowadzenia pojazdów + odholowanie pojazdu."
+      },
+      "D.12": {
+        name: "D.12 Jazda pod wpływem alkoholu lub innych substancji odurzających",
+        months: 20,
+        fine: 60000,
+        rk: "NIE",
+        bail: "NIE",
+        info: "Odebranie uprawnień do prowadzenia pojazdów."
+      }
+      // tutaj możesz dopisać kolejne paragrafy z pozostałych tabel
+      // np. "BP.1": { name: "...", months: 15, fine: 40000, rk: "TAK", bail: "NIE", info: "..." }
+    };
+
+    const select = document.getElementById("offenseSelect");
+    const resultBox = document.getElementById("result");
+    const resTitle = document.getElementById("resTitle");
+    const resMonths = document.getElementById("resMonths");
+    const resFine = document.getElementById("resFine");
+    const resRK = document.getElementById("resRK");
+    const resBail = document.getElementById("resBail");
+    const resInfo = document.getElementById("resInfo");
+
+    select.addEventListener("change", () => {
+      const code = select.value;
+      if (!code || !offenses[code]) {
+        resultBox.style.display = "none";
+        return;
+      }
+      const o = offenses[code];
+
+      resTitle.textContent = o.name;
+      resMonths.textContent = o.months === 0 ? "0 (tylko mandat / inne środki)" : o.months + " mies.";
+      resFine.textContent = "$" + o.fine.toLocaleString("pl-PL");
+
+      const rkBadge = o.rk === "TAK"
+        ? `<span class="badge badge-red">TAK</span>`
+        : `<span class="badge badge-green">NIE</span>`;
+      const bailBadge = o.bail === "TAK"
+        ? `<span class="badge badge-green">TAK</span>`
+        : (o.bail === "NIE"
+            ? `<span class="badge badge-red">NIE</span>`
+            : `<span class="badge">${o.bail}</span>`);
+
+      resRK.innerHTML = o.rk + " " + rkBadge;
+      resBail.innerHTML = o.bail + " " + bailBadge;
+      resInfo.textContent = o.info || "";
+
+      resultBox.style.display = "block";
+    });
+  </script>
+</body>
+</html>
